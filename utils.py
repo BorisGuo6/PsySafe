@@ -3,6 +3,30 @@ import yaml
 import os
 
 
+def resolve_api_key(value, default_env="OPENAI_API_KEY"):
+    """
+    Resolve an API key from a config value.
+    Supports:
+      - env:VARNAME
+      - $VARNAME or ${VARNAME}
+      - empty/None -> fallback to default_env
+    """
+    if value is None:
+        return os.environ.get(default_env, "")
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return os.environ.get(default_env, "")
+        if stripped.startswith("env:"):
+            return os.environ.get(stripped[4:], "")
+        if stripped.startswith("${") and stripped.endswith("}"):
+            return os.environ.get(stripped[2:-1], "")
+        if stripped.startswith("$"):
+            return os.environ.get(stripped[1:], "")
+        return stripped
+    return value
+
+
 def write_chat_history(sender, message, output_file):
     """
     Write the chat history into a text file.
@@ -110,7 +134,6 @@ def get_prompt(prompt_file):
         content = file.read()
 
     return content
-
 
 
 

@@ -447,13 +447,15 @@ def main(config: Dict[str, Any], config_file_name: str):
     # prepare api
 
     config_list_psysafe = autogen.config_list_from_json(
-    config["Api"]["api_path"],
-    filter_dict={
-        "model": {
-            config["Base_llm_name"],
-                },
-            },   
-        )
+        config["Api"]["api_path"],
+        filter_dict={
+            "model": {
+                config["Base_llm_name"],
+            },
+        },
+    )
+    for item in config_list_psysafe:
+        item["api_key"] = resolve_api_key(item.get("api_key"))
     if config["Base_llm"] == "claude":
         claude_list = autogen.config_list_from_json(
             "api_claude/OAI_CONFIG_LIST",
@@ -471,8 +473,12 @@ def main(config: Dict[str, Any], config_file_name: str):
         #config_list = {"config_list": config_list_psysafe, "cache_seed": 42}
 
     # prepare client for task specify
-    api = load_json(config["Api"]["api_path"])[0]["api_key"]
-    client = OpenAI(api_key=api,)
+    api = ""
+    if config_list_psysafe:
+        api = config_list_psysafe[0].get("api_key", "")
+    if not api:
+        api = resolve_api_key(load_json(config["Api"]["api_path"])[0].get("api_key"))
+    client = OpenAI(api_key=api) if api else OpenAI()
 
     # prepare opensource model like llama2
     if config["Base_llm"] == "llama_70b":
@@ -588,8 +594,7 @@ def main(config: Dict[str, Any], config_file_name: str):
         for _index, _item in enumerate(config["Setting"]["agents"].keys()):
             agent_list.append(agents_dict[agents_name_list[_index]])
         agent_list = [user_proxy] + agent_list
-        #_max_round = config["Setting"]["max_round"]
-        _max_round = 2
+        _max_round = config["Setting"]["max_round"]
         
         if config["Setting"]["Doctor"]["doctor_in_loop"]:
             # this will test all the agents in the list. 

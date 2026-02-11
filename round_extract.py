@@ -1,6 +1,7 @@
 # from utils import get_prompt, load_config_yaml, load_json, _check_and_create_folder
 import re
 from openai import OpenAI
+from utils import resolve_api_key
 import os
 from tqdm import tqdm
 import pandas as pd
@@ -127,12 +128,12 @@ def count_occurrences(pattern, string):
     return len(re.findall(pattern, string))
 
 
-def run_conversation_gpt(prompt, key, model="gpt-3.5-turbo",):
+def run_conversation_gpt(prompt, key=None, model="gpt-3.5-turbo",):
     """
     generate evaluation results using gpt api
     """
 
-    client = OpenAI(api_key=key,)
+    client = OpenAI(api_key=key) if key else OpenAI()
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": prompt}
@@ -167,7 +168,7 @@ def round_extract(opt, config):
     eval_dangerous = get_prompt("prompts/eval_gpt/eval_gpt_dangerous.txt")
 
     # prepare gpt key
-    api = load_json(config["Api"]["api_path"])[0]["api_key"]
+    api = resolve_api_key(load_json(config["Api"]["api_path"])[0].get("api_key"))
 
     # start evaluation
     for file_name in tqdm(os.listdir(path)):
